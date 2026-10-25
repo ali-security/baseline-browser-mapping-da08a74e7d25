@@ -1,8 +1,6 @@
 name: Refresh static assets
 
 on:
-  schedule:
-    - cron: "0 15 * * *"
   workflow_dispatch:
 
 env:

@@ -2,9 +2,12 @@ name: Run tests
 
 on:
   workflow_dispatch:
+    inputs:
+      test-filter:
+        description: "Optional jasmine --filter regex to run a subset of specs"
+        required: false
+        default: ""
   workflow_call:
-  pull_request:
-    branches: [main]
 
 env:
   package_dir: "/"
@@ -12,43 +15,43 @@ env:
 jobs:
   prepare-build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
-      # 1. Check if the caller already provided a build
-      - name: Try to download existing build artifact
-        id: download-check
-        uses: actions/download-artifact@v4
-        with:
-          name: build-output
-          path: ./dist
-        continue-on-error: true
-
       # 2. If the download failed, build it now using Node 24
       - name: Setup Node 24 (for building)
-        if: steps.download-check.outcome != 'success'
         uses: actions/setup-node@v4
         with:
           node-version: "24"
 
       - name: Install & Build (only if needed)
-        if: steps.download-check.outcome != 'success'
         run: |
           npm ci
           npm run build
 
       # 3. Always upload it (or re-upload it) so the matrix jobs can find it
       - name: Ensure artifact is available for matrix
-        if: steps.download-check.outcome != 'success'
         uses: actions/upload-artifact@v4
         with:
           name: build-output
           path: ./dist
           retention-days: 1
 
+      - name: Pack npm tarball
+        run: npm pack
+
+      - name: Upload npm tarball
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-package
+          path: ./baseline-browser-mapping-*.tgz
+          if-no-files-found: error
+
   test-matrix:
     needs: prepare-build
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       matrix:
         node-version: [6, 8, 10, 12, 14, 16, 18, 20, 22, 24]
@@ -66,6 +69,8 @@ jobs:
           path: ./dist
 
       - name: Run tests
+        env:
+          TEST_FILTER: ${{ inputs.test-filter }}
         run: |
           NODE_MAJOR=$(node -p "process.versions.node.split('.')[0]")
           echo "Running on Node $NODE_MAJOR"
@@ -75,6 +80,11 @@ jobs:
           else
             echo "Running full test suite..."
             npm ci
-            npm run test:jasmine
-            npm run test:jasmine-browser
+            if [ -n "$TEST_FILTER" ]; then
+              npx jasmine --filter="$TEST_FILTER"
+              npx jasmine-browser-runner runSpecs --config ./spec/support/jasmine-browser.js --filter="$TEST_FILTER"
+            else
+              npm run test:jasmine
+              npm run test:jasmine-browser
+            fi
           fi
