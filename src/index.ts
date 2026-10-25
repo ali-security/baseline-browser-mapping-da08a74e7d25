@@ -133,18 +133,9 @@ const kaiOSWarning = (options: Options | AllVersionsOptions) => {
     options.includeDownstreamBrowsers === false &&
     options.includeKaiOS === true
   ) {
-    console.log(
-      new Error(
-        "KaiOS is a downstream browser and can only be included if you include other downstream browsers. Please ensure you use `includeDownstreamBrowsers: true`.",
-      ),
+    throw new Error(
+      "KaiOS is a downstream browser and can only be included if you include other downstream browsers. Please ensure you use `includeDownstreamBrowsers: true`.",
     );
-    if (typeof process !== "undefined" && process.exit) {
-      process.exit(1);
-    } else {
-      throw new Error(
-        "KaiOS configuration error: process.exit is not available",
-      );
-    }
   }
 };
 
@@ -496,18 +487,9 @@ export function getCompatibleVersions(userOptions?: Options): BrowserVersion[] {
   if (!options.widelyAvailableOnDate && !options.targetYear) {
     targetDate = new Date();
   } else if (options.targetYear && options.widelyAvailableOnDate) {
-    console.log(
-      new Error(
-        "You cannot use targetYear and widelyAvailableOnDate at the same time.  Please remove one of these options and try again.",
-      ),
+    throw new Error(
+      "You cannot use targetYear and widelyAvailableOnDate at the same time.  Please remove one of these options and try again.",
     );
-    if (typeof process !== "undefined" && process.exit) {
-      process.exit(1);
-    } else {
-      throw new Error(
-        "Configuration error: targetYear and widelyAvailableOnDate cannot be used together",
-      );
-    }
   } else if (options.widelyAvailableOnDate) {
     targetDate = new Date(options.widelyAvailableOnDate);
   } else if (options.targetYear) {

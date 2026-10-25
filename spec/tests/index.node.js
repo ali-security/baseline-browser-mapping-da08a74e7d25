@@ -69,6 +69,21 @@ describe("getCompatibleVersions default", () => {
     });
   });
 
+  it("Throws an error if includeKaiOS is true but includeDownstreamBrowsers is false", () => {
+    expect(() => {
+      getCompatibleVersions({ includeKaiOS: true });
+    }).toThrowError(/KaiOS is a downstream browser/);
+  });
+
+  it("Throws an error if targetYear and widelyAvailableOnDate are used together", () => {
+    expect(() => {
+      getCompatibleVersions({
+        targetYear: 2020,
+        widelyAvailableOnDate: "2020-01-01",
+      });
+    }).toThrowError(/cannot use targetYear and widelyAvailableOnDate/);
+  });
+
   it("Warns when targeting newly available versions with old data", () => {
     spyOn(console, "warn");
     const thirtyMonthsFromNow = new Date();
@@ -148,5 +163,11 @@ describe("getAllVersions default", () => {
     expect(csvExportLines[1].startsWith('"chrome","0","pre_baseline"')).toBe(
       true,
     );
+  });
+
+  it("Throws an error when includeKaiOS is true but includeDownstreamBrowsers is false", () => {
+    expect(() => {
+      getAllVersions({ includeKaiOS: true });
+    }).toThrowError(/KaiOS is a downstream browser/);
   });
 });
